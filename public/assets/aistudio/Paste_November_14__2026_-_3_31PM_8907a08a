@@ -1,0 +1,1084 @@
+# SMART IoT ATTENDANCE MANAGEMENT SYSTEM
+## Complete College Portal Development
+
+Act as an experienced senior full-stack developer, software architect, Firebase engineer and professional UI/UX designer.
+
+Build a complete, functional, production-oriented Smart IoT Attendance Management System for Methodist College of Engineering and Technology (MCET).
+
+This is a real college attendance management project using ESP32, RFID cards and Firebase.
+
+I do NOT want just a frontend design or a static dashboard. I want a properly structured application with working authentication, database connectivity, role-based permissions, attendance management, timetable management and an architecture ready for ESP32 integration.
+
+The application must look and behave like a professionally developed college ERP portal.
+
+---
+
+# 1. TECHNOLOGY STACK AND PROJECT STRUCTURE
+
+Use the following technologies:
+
+- React
+- TypeScript
+- Modern CSS or Tailwind CSS
+- Firebase Authentication
+- Google OAuth
+- Firebase Cloud Firestore
+- Reusable React components
+- Proper routing and protected routes.
+
+Firebase project:
+
+- Existing project name: RFID-Attendance-System.
+- Use the existing Firebase project.
+- Use the existing Firestore database if already created.
+- Do not create another Firebase project.
+- Do not create duplicate databases.
+
+Create a properly organized application with:
+
+- Authentication service.
+- Firebase configuration.
+- Firestore database service.
+- Student management service.
+- Faculty management service.
+- Attendance service.
+- Timetable service.
+- Substitution service.
+- Device management service.
+- Report and analytics service.
+- Reusable UI components.
+- Protected routes.
+- Proper TypeScript interfaces.
+
+Use environment variables for Firebase configuration.
+
+Do not invent Firebase credentials or hardcode private credentials.
+
+Do not use localStorage as the primary database. All important records must persist in Firebase Firestore.
+
+---
+
+# 2. UI/UX DESIGN — PROFESSIONAL COLLEGE ERP STYLE
+
+THIS IS ONE OF THE MOST IMPORTANT REQUIREMENTS.
+
+I do not want the website to look like a typical AI-generated dashboard.
+
+I want it to look like a genuine, professionally designed college ERP portal developed by an experienced UI/UX team.
+
+Use my attached reference screenshots as inspiration for the layout, information arrangement and dashboard structure.
+
+Do not blindly copy them.
+
+## Theme
+
+Primary colour:
+- Sky Blue: #03CAFC
+- RGB: 3, 202, 252
+
+Other colours:
+- Main background: White (#FFFFFF).
+- Secondary background: Very light blue-grey.
+- Primary text: Dark navy.
+- Secondary text: Professional grey.
+- Borders: Subtle light grey-blue.
+- Success: Green.
+- Warning: Amber.
+- Error: Red.
+
+## Design characteristics
+
+- Clean and professional.
+- Information-rich layouts.
+- Well-organized sections.
+- Compact but readable cards.
+- Proper alignment and spacing.
+- Consistent typography.
+- Professional icons.
+- Clean tables.
+- Well-designed navigation.
+- Consistent button styles.
+- Subtle shadows.
+- Thin borders.
+- Proper visual hierarchy.
+
+## Strictly avoid
+
+- Excessive gradients.
+- Glassmorphism.
+- Glowing elements.
+- Random decorative shapes.
+- Huge unnecessary cards.
+- Excessive rounded containers.
+- Oversized headings.
+- Excessive empty space.
+- Random emojis.
+- Generic AI-generated dashboard templates.
+- Unnecessary animations.
+- Flashy 3D illustrations.
+- Unprofessional colour combinations.
+
+## Smoothness
+
+The entire website must feel extremely smooth.
+
+Implement:
+
+- Smooth navigation.
+- Subtle page transitions.
+- Fast loading.
+- Smooth dropdowns.
+- Subtle hover effects.
+- Responsive sidebar.
+- Loading skeletons.
+- Toast notifications.
+- Proper confirmation dialogs.
+- Smooth table interactions.
+- Responsive mobile layouts.
+
+Animations must be subtle and should never affect performance.
+
+## College branding
+
+Use:
+
+Methodist College of Engineering and Technology (MCET)
+
+Make the college name, logo and branding configurable through admin settings rather than hardcoding them throughout the application.
+
+The overall design should resemble a genuine institutional portal, not a flashy AI-generated SaaS template.
+
+---
+
+# 3. LOGIN AND AUTHENTICATION SYSTEM
+
+Use Firebase Authentication with Google Sign-In.
+
+The login page must contain only TWO main login buttons:
+
+1. Student Login
+2. Faculty Login
+
+There must be NO separate Admin Login button.
+
+## Login behaviour
+
+When a user clicks Student Login:
+- Open Google's account selection screen.
+- Allow the user to select their Google account.
+- Authenticate using Firebase.
+- Verify whether the account is registered as a student.
+- Redirect to Student Dashboard.
+
+When a user clicks Faculty Login:
+- Open Google's account selection screen.
+- Authenticate using Firebase.
+- Verify whether the account is registered as faculty.
+- Redirect to Faculty Dashboard.
+
+## Special admin login behaviour
+
+Admin login must happen automatically.
+
+For example:
+
+If the authorized admin selects their Google account, the application must identify the admin role and redirect directly to Admin Dashboard.
+
+There must be no visible Admin Login button.
+
+This must work regardless of which login button was initially clicked.
+
+The role must be verified using trusted Firebase records or custom claims.
+
+## Security
+
+- Students cannot assign themselves faculty or admin roles.
+- Faculty cannot assign themselves admin roles.
+- Unregistered accounts must not receive dashboard access.
+- Admin accounts must be authorized through a trusted setup process.
+- Include logout.
+- Include account switching.
+- Include proper authentication error handling.
+
+Use Google's account chooser so users can select between multiple Google accounts.
+
+---
+
+# 4. ADMIN DASHBOARD
+
+Admin has complete management access to the attendance system.
+
+Create a professional Admin Dashboard with the following sections.
+
+## A. Dashboard Overview
+
+Display:
+
+- Total Students.
+- Total Faculty.
+- Total Classes.
+- Total Subjects.
+- Today's Attendance.
+- Present Students.
+- Absent Students.
+- Overall Attendance Percentage.
+- Connected RFID Devices.
+- Recent Activity.
+
+Use compact statistics cards and professional charts.
+
+## B. Student Management
+
+Admin must be able to:
+
+- Add students.
+- Edit student details.
+- Delete or deactivate students.
+- Search students.
+- Filter students.
+- Assign roll numbers.
+- Assign student IDs.
+- Assign department.
+- Assign semester.
+- Assign class and section.
+- Assign Batch I or Batch II where specified.
+- Register RFID cards.
+- Link Google accounts.
+- View individual student profiles.
+
+Each student must have a unique record.
+
+## C. Faculty Management
+
+Admin must be able to:
+
+- Add faculty.
+- Edit faculty details.
+- Delete or deactivate faculty.
+- Assign subjects.
+- Assign classes.
+- Assign sections.
+- Manage faculty Google accounts.
+- View faculty profiles.
+- Manage faculty permissions.
+
+## D. Subject Management
+
+Admin must be able to:
+
+- Add subjects.
+- Edit subjects.
+- Delete or deactivate subjects.
+- Assign course codes.
+- Assign subject names.
+- Assign faculty.
+- Assign classes.
+- Manage practical and theory subjects separately.
+
+## E. Class Management
+
+Manage:
+
+- Departments.
+- Academic years.
+- Semesters.
+- Classes.
+- Sections.
+- Student batches.
+- Classroom assignments.
+
+The system should support multiple departments and classes in the future.
+
+## F. Timetable Management
+
+Admin must be able to:
+
+- View weekly timetable.
+- Add timetable entries.
+- Edit timetable entries.
+- Delete timetable entries.
+- Assign subjects.
+- Assign faculty.
+- Assign classrooms.
+- Manage period timings.
+- Manage batch-specific timetable entries.
+- Create temporary substitutions.
+- View substitution history.
+
+## G. Attendance Management
+
+Admin must be able to:
+
+- View all attendance records.
+- Search attendance.
+- Filter by student.
+- Filter by roll number.
+- Filter by subject.
+- Filter by class.
+- Filter by date.
+- View RFID attendance.
+- View manual attendance.
+- Correct attendance with authorization.
+- View attendance history.
+
+## H. Reports and Analytics
+
+Provide:
+
+- Daily attendance reports.
+- Weekly attendance reports.
+- Monthly attendance reports.
+- Student-wise reports.
+- Subject-wise reports.
+- Faculty-wise reports.
+- Class-wise reports.
+- Attendance percentage.
+- Present and absent statistics.
+- Exportable CSV/Excel reports.
+
+## I. RFID Device Management
+
+Admin must be able to:
+
+- Register ESP32 devices.
+- Assign devices to classrooms.
+- View device IDs.
+- View connection status.
+- View last synchronization.
+- View pending attendance uploads.
+- View device activity.
+- Activate or deactivate devices.
+
+## J. Activity Logs
+
+Maintain records of:
+
+- Student creation and modification.
+- Faculty creation and modification.
+- Attendance corrections.
+- Timetable changes.
+- Subject substitutions.
+- Faculty substitutions.
+- Device registration.
+- Administrative actions.
+
+Show who performed the action and when.
+
+---
+
+# 5. FACULTY DASHBOARD
+
+Faculty must have a separate dashboard.
+
+Faculty should only access the classes and subjects assigned to them or explicitly authorized for substitution.
+
+## Dashboard overview
+
+Display:
+
+- Faculty profile.
+- Today's timetable.
+- Assigned subjects.
+- Assigned classes.
+- Upcoming classes.
+- Recent attendance activity.
+
+## Faculty features
+
+- View assigned classes.
+- View assigned subjects.
+- View student lists.
+- View class attendance.
+- Mark attendance manually.
+- View RFID attendance.
+- View attendance history.
+- View subject-wise attendance.
+- Generate attendance reports.
+- Download reports.
+- View timetable.
+- Make authorized temporary class substitutions.
+- Correct attendance with appropriate permissions.
+
+Faculty must not have access to unrelated classes or the entire college database.
+
+## Faculty substitution permissions
+
+Faculty must be able to make authorized temporary changes to a class's actual subject and faculty.
+
+All changes must be recorded in activity logs.
+
+---
+
+# 6. STUDENT DASHBOARD
+
+This is one of the most important parts of the website.
+
+Every student must have their own private dashboard.
+
+A student must ONLY be able to view their own attendance and personal academic information.
+
+## Critical privacy example
+
+Suppose Roll Number 6 logs in.
+
+That student must only see Roll Number 6's:
+
+- Attendance.
+- Attendance percentage.
+- Subject-wise attendance.
+- Attendance history.
+- Personal profile.
+- Timetable.
+
+Roll Number 6 must NEVER be able to access Roll Number 7's attendance.
+
+This must be enforced through Firebase Security Rules, not just by hiding information in the frontend.
+
+Changing a URL or modifying a frontend query must not expose another student's data.
+
+## A. Student Profile
+
+Display:
+
+- Student name.
+- Profile picture.
+- Roll number.
+- Student ID.
+- Department.
+- Semester.
+- Class.
+- Section.
+- Batch.
+- Academic year.
+
+Use a professional profile header inspired by the attached reference screenshot.
+
+## B. Attendance Overview
+
+Display:
+
+- Overall attendance percentage.
+- Total classes conducted.
+- Classes attended.
+- Total absences.
+- Today's attendance.
+
+Use clear and compact statistics cards.
+
+## C. Subject-wise Attendance
+
+Display individual cards for every subject.
+
+For example:
+
+- Logical Design and Computer Architecture.
+- Discrete Structures.
+- Database Management Systems.
+- Operating Systems.
+- Statistical Analytics and Computing using Python Programming.
+- Human Values and Professional Ethics.
+- Database Management Systems Lab.
+- Operating Systems Lab.
+- Statistical Analytics and Computing using Python Programming Lab.
+
+Each subject card must show:
+
+- Subject name.
+- Present classes.
+- Absent classes.
+- Total classes.
+- Attendance percentage.
+
+Use visual progress indicators.
+
+Highlight low-attendance subjects clearly.
+
+## D. Attendance History
+
+Include:
+
+- Date-wise attendance.
+- Subject-wise attendance history.
+- Attendance calendar.
+- Recent RFID scans.
+- Present and absent records.
+
+## E. Student Timetable
+
+Display:
+
+- Weekly timetable.
+- Current subject.
+- Upcoming class.
+- Period timings.
+- Classroom.
+- Temporary timetable changes.
+
+Only show the timetable applicable to that student's class and batch.
+
+---
+
+# 7. ACTUAL COLLEGE TIMETABLE
+
+Use the attached college timetable image as the primary source of truth.
+
+College:
+
+Methodist College of Engineering and Technology (MCET)
+
+Class:
+
+III Semester BE AI&ML - A
+
+Academic Year:
+
+2026-27
+
+Semester:
+
+III
+
+Effective From:
+
+03-08-2026
+
+Classroom:
+
+LH-E-303
+
+Working Days:
+
+Monday to Saturday.
+
+## Period timings
+
+| Period | Time |
+|---|---|
+| I | 09:15 AM – 10:15 AM |
+| II | 10:15 AM – 11:15 AM |
+| III | 11:15 AM – 12:15 PM |
+| IV | 12:15 PM – 01:15 PM |
+| Lunch | 01:15 PM – 02:00 PM |
+| V | 02:00 PM – 03:00 PM |
+| VI | 03:00 PM – 04:00 PM |
+
+## Weekly timetable
+
+Monday:
+- Period I–II: SAC B-I / DBMS B-II.
+- Period III–IV: OS LAB B-II (103) / DBMS B-I (108).
+- Period V: SAC.
+- Period VI: LDCA.
+
+Tuesday:
+- Period I–II: SEC-IOT (402).
+- Period III–IV: SAC / OS batch allocation exactly as shown in the attached timetable.
+- Period V: DBMS.
+- Period VI: SAC.
+
+Wednesday:
+- Period I: LDCA.
+- Period II: SAC.
+- Period III: HVPE.
+- Period IV: DS.
+- Period V: OS.
+- Period VI: SPORTS.
+
+Thursday:
+- Period I: OS.
+- Period II: HVPE.
+- Period III: DS.
+- Period IV: SAC.
+- Period V: DBMS.
+- Period VI: LIBRARY.
+
+Friday:
+- Period I: DS.
+- Period II: LDCA.
+- Period III: OS.
+- Period IV: DBMS.
+- Period V–VI: MENTORING.
+
+Saturday:
+- Period I: DBMS.
+- Period II: DS.
+- Period III: OS.
+- Period IV: LDCA.
+- Period V–VI: DIGITAL LEARNING.
+
+IMPORTANT TIMETABLE RULES:
+
+- The attached original timetable image is authoritative.
+- Preserve the exact original subject names and B-I/B-II labels.
+- Preserve the exact merged-cell structure.
+- Do not assume every subject is batch-divided.
+- Monday I–II is clarified as SAC Lab for Batch I and DBMS for Batch II.
+- Preserve Monday III–IV as OS Lab B-II and DBMS Lab B-I.
+- For Tuesday, verify the exact batch labels and merged-cell positions directly from the attached image.
+- Do not guess unclear entries.
+- If a timetable entry cannot be read confidently, flag it for confirmation instead of inventing it.
+- Keep all timetable entries editable by Admin.
+- Do not modify the original timetable automatically.
+
+## Subject names and faculty
+
+Use these subject mappings:
+
+| Short Name | Subject Name | Faculty |
+|---|---|---|
+| LDCA | Logical Design and Computer Architecture | Mrs. B. Sowjanya |
+| DS | Discrete Structures | Mrs. J. Sowmya |
+| DBMS | Database Management Systems | Mr. V. Saidulu |
+| OS | Operating Systems | Mr. R. Vinod Kumar |
+| SAC | Statistical Analytics and Computing using Python Programming | Ms. Hiba Anjum |
+| HVPE | Human Values and Professional Ethics | Mrs. Jayashree |
+| DBMS Lab | Database Management Systems Lab | Mr. V. Saidulu / Mr. Yellappa |
+| OS Lab | Operating Systems Lab | Mr. R. Vinod Kumar / Mr. N. Basaveshwara Rao |
+| SAC Lab | Statistical Analytics and Computing using Python Programming Lab | Ms. Hiba Anjum / Mrs. Summayya Samreen |
+| SEC-IOT | Skill Enhancement Course - IOT | Dr. Shaik Khaleel Ahmed / Mr. Prabhakar Rao |
+
+Other timetable activities:
+
+- SPORTS.
+- LIBRARY.
+- MENTORING.
+- DIGITAL LEARNING.
+
+Course codes must be editable. Do not invent codes if they are not clearly readable in the supplied timetable.
+
+---
+
+# 8. AUTOMATIC TIMETABLE-BASED RFID ATTENDANCE
+
+This is the core of our IoT project.
+
+The system must identify the correct subject automatically using the timetable.
+
+## RFID attendance workflow
+
+1. Student scans their RFID card.
+2. ESP32 reads the RFID card UID.
+3. The system identifies the registered student.
+4. It identifies the student's class and section.
+5. It identifies the student's batch where applicable.
+6. It identifies the classroom and registered RFID device.
+7. It checks the current date and time.
+8. It identifies the current timetable period.
+9. It checks whether a temporary substitution exists.
+10. It determines the actual subject.
+11. It records attendance in Firestore.
+12. The dashboards update automatically.
+
+Attendance must be recorded:
+
+- Student-wise.
+- Subject-wise.
+- Period-wise.
+- Date-wise.
+- Class-wise.
+
+Use the original scan time as the attendance timestamp.
+
+Use Asia/Kolkata timezone.
+
+If a valid timetable entry does not exist, do not guess the subject. Flag the scan for review.
+
+## ESP32 display
+
+When a card is scanned, display useful information on the connected LCD/OLED:
+
+- Student name.
+- Roll number.
+- Time.
+- Class or subject.
+- Attendance Marked.
+
+Show an appropriate message if the card is invalid, duplicated or saved offline.
+
+---
+
+# 9. SUBJECT AND FACULTY SUBSTITUTION
+
+This is a very important real-world requirement.
+
+We need BOTH subject substitution and faculty substitution.
+
+Do not implement only faculty replacement.
+
+## Real college example
+
+Suppose the regular timetable has:
+
+- Subject: Python.
+- Faculty: Python Sir.
+
+But Python Sir is absent.
+
+Another faculty member, Java Sir, comes and takes the class.
+
+In this situation, the actual subject is Java, not Python.
+
+The authorized person must be able to change BOTH the subject and faculty for that specific period.
+
+## Substitution workflow
+
+1. Admin or authorized Faculty opens the timetable.
+2. Selects the date.
+3. Selects the particular period.
+4. Clicks Edit Class.
+5. Selects the actual subject.
+6. Selects the actual faculty.
+7. Enters an optional reason.
+8. Saves the temporary substitution.
+
+After saving:
+
+- ESP32 uses the updated timetable.
+- Attendance is recorded under the actual subject.
+- The actual faculty is displayed.
+- The original timetable remains unchanged.
+
+## Permissions
+
+- Admin can make substitutions.
+- Faculty can make authorized substitutions.
+- Faculty cannot modify unrelated classes.
+- Every substitution requires proper authorization.
+
+## Substitution history
+
+Save:
+
+- Original subject.
+- Actual subject.
+- Original faculty.
+- Actual faculty.
+- Date.
+- Period.
+- Classroom.
+- Reason.
+- Person who made the change.
+- Timestamp.
+
+The substitution must apply only to the selected date and period unless explicitly configured otherwise.
+
+---
+
+# 10. MANUAL ATTENDANCE
+
+In addition to RFID attendance, provide manual attendance functionality for authorized faculty and administrators.
+
+Workflow:
+
+1. Faculty opens an assigned class.
+2. Selects the date.
+3. Selects the subject.
+4. Selects the period.
+5. Views the student list.
+6. Marks Present or Absent.
+7. Saves attendance.
+
+Manual and RFID attendance must use the same Firestore attendance structure.
+
+Prevent duplicate records.
+
+If attendance already exists, display a clear warning.
+
+All manual changes must be recorded in activity logs.
+
+---
+
+# 11. FIREBASE DATABASE AND DATA STRUCTURE
+
+Use Firebase Cloud Firestore as the main database.
+
+Create a clean and scalable database structure.
+
+Suggested collections:
+
+- users
+- students
+- faculty
+- classes
+- subjects
+- timetable
+- substitutions
+- attendance
+- devices
+- activityLogs
+- accessRequests
+
+Organize documents and relationships properly.
+
+## Attendance record fields
+
+Each attendance record should include:
+
+- Student UID.
+- Student ID.
+- Roll number.
+- Class ID.
+- Section.
+- Batch where applicable.
+- Subject ID.
+- Subject name.
+- Date.
+- Period.
+- Classroom.
+- Attendance status.
+- Attendance source.
+- Device ID where applicable.
+- Actual scan timestamp.
+- Recorded timestamp.
+- Faculty ID where applicable.
+
+Use proper server timestamps.
+
+Use deterministic session or attendance identifiers to prevent duplicate entries.
+
+Use Firestore transactions or other appropriate atomic operations.
+
+## Attendance calculation
+
+Calculate attendance percentage as:
+
+Present Classes / (Present Classes + Absent Classes) × 100
+
+Do not count cancelled or unfinalized classes as absences.
+
+Store attendance records in Firestore, not just in frontend state.
+
+---
+
+# 12. FIREBASE SECURITY AND USER PERMISSIONS
+
+Security is extremely important.
+
+Implement proper Firestore Security Rules.
+
+## Student permissions
+
+- Students can read only their own profile.
+- Students can read only their own attendance.
+- Students can read their own timetable.
+- Students cannot modify attendance.
+- Students cannot read other students' information.
+- Students cannot modify their roles.
+
+## Faculty permissions
+
+- Faculty can read assigned classes.
+- Faculty can access authorized student lists.
+- Faculty can view attendance for assigned classes.
+- Faculty can mark attendance for authorized sessions.
+- Faculty can make authorized substitutions.
+- Faculty cannot access unrelated classes.
+- Faculty cannot modify admin permissions.
+
+## Admin permissions
+
+- Admin can manage the entire system.
+- Admin can manage users.
+- Admin can manage classes and subjects.
+- Admin can manage timetable.
+- Admin can manage attendance.
+- Admin can manage devices.
+- Admin can view all reports.
+
+## Security implementation
+
+- Use Firebase Authentication.
+- Use trusted role verification.
+- Use Firebase custom claims or secure server-managed role records.
+- Never trust frontend role values.
+- Never allow users to assign themselves roles.
+- Never use public read/write rules.
+- Never use allow read, write: if true.
+- Enforce student privacy through Firestore rules independently of frontend filtering.
+
+Student attendance queries must be restricted to the authenticated student's UID.
+
+Create proper Firestore indexes where needed.
+
+Provide complete Firestore Security Rules matching the implemented database structure.
+
+## First admin setup
+
+Provide a secure way to authorize the initial admin Google account.
+
+Admin permissions must be assigned through a trusted setup process, not through an ordinary client-side registration form.
+
+Do not expose admin authorization secrets in the frontend.
+
+---
+
+# 13. ESP32, RFID AND OFFLINE SYNCHRONIZATION
+
+Our hardware:
+
+- ESP32.
+- RC522 RFID reader.
+- RFID cards.
+- LCD display.
+
+Initially, we will test with ONE ESP32 RFID reader.
+
+In the future, we plan to install ONE RFID reader in EVERY classroom.
+
+Design the system to support multiple classrooms and multiple RFID devices.
+
+## Device management
+
+Each device should have:
+
+- Unique device ID.
+- Assigned classroom.
+- Assigned class/section.
+- Connection status.
+- Last synchronization.
+- Pending uploads.
+- Device activity.
+
+## Offline synchronization
+
+If internet is unavailable:
+
+1. ESP32 temporarily stores scanned attendance events locally.
+2. Each scan receives a unique event ID.
+3. Preserve the original scan timestamp.
+4. When internet returns, upload pending events.
+5. Verify whether each event has already been processed.
+6. Do not create duplicate attendance records.
+
+The system must support safe repeated synchronization.
+
+## Important security requirement
+
+The Firebase Web API key is not a private authentication secret.
+
+Do not put Firebase Admin SDK service-account credentials or private keys inside ESP32 firmware or frontend code.
+
+Create a secure device ingestion interface using a trusted backend endpoint or equivalent authenticated integration.
+
+Device writes must be validated before being saved to Firestore.
+
+Keep this device integration configurable so that we can connect our actual ESP32 later.
+
+Do not pretend that the RFID hardware is already connected or working without actual testing.
+
+---
+
+# 14. REPORTS, ANALYTICS, NOTIFICATIONS AND FINAL REQUIREMENTS
+
+## A. Reports and Analytics
+
+Create a professional reporting section with:
+
+- Overall attendance.
+- Subject-wise attendance.
+- Student-wise attendance.
+- Class-wise attendance.
+- Daily reports.
+- Weekly reports.
+- Monthly reports.
+- Present and absent statistics.
+- Lowest attendance subjects.
+- Attendance trends.
+- Export to CSV/Excel.
+
+Use clean charts and professional tables.
+
+## B. Notifications
+
+Show useful notifications for:
+
+- Successful attendance marking.
+- Invalid RFID cards.
+- Duplicate scans.
+- Failed attendance uploads.
+- Device disconnection.
+- Successful synchronization.
+- Timetable substitutions.
+- Attendance corrections.
+
+## C. Activity Logs
+
+Maintain a history of important operations.
+
+Display:
+
+- Action.
+- User who performed it.
+- Date and time.
+- Related student/class/subject.
+- Previous value where relevant.
+- Updated value where relevant.
+
+## D. Academic and Portal Information
+
+Provide a clean section for relevant college information, such as:
+
+- Important announcements.
+- Academic notices.
+- Timetable updates.
+- College information.
+
+Do not add unrelated features such as fee payment, shopping, unrelated quizzes or unnecessary modules.
+
+## E. Functional requirements
+
+- Every navigation item must work.
+- Every button must perform its intended action.
+- Every form must have validation.
+- Every important operation must show success or error feedback.
+- Use loading indicators.
+- Use proper empty states.
+- Use confirmation dialogs for destructive actions.
+- Handle authentication failures.
+- Handle Firestore errors.
+- Do not display fake attendance statistics.
+- Do not create fake live attendance records.
+- Clearly identify any demonstration data as DEMO DATA.
+- Do not replace Firebase with localStorage.
+- Keep the code modular and maintainable.
+- Ensure desktop, tablet and mobile compatibility.
+
+---
+
+# FINAL DEVELOPMENT INSTRUCTIONS
+
+Build the actual working website, not just a visual mockup.
+
+Prioritize the following:
+
+1. Professional college ERP appearance.
+2. Correct login and role management.
+3. Student data privacy.
+4. Firebase persistence.
+5. Subject-wise attendance.
+6. Accurate timetable.
+7. Temporary subject and faculty substitutions.
+8. Manual attendance.
+9. ESP32 integration architecture.
+10. Offline synchronization.
+11. Reports and analytics.
+12. Smooth user experience.
+
+Before implementing the application:
+
+- Inspect the existing project.
+- Inspect the available Firebase connection.
+- Use the existing Firebase project.
+- Preserve any existing working functionality.
+- Check the attached timetable carefully.
+- Check the reference screenshots carefully.
+
+If any information is unclear, do not invent it.
+
+If a feature needs additional Firebase configuration, credentials, backend services or physical hardware, create the correct integration structure and clearly explain what remains to be configured.
+
+Do not claim that an integration is complete until it has actually been tested.
+
+The final product must look like a genuine, professionally designed college ERP portal and function as a real Smart IoT Attendance Management System.
+
+Accuracy, database security, student privacy, reliability and usability are more important than unnecessary visual effects or additional features.

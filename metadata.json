@@ -1,0 +1,6 @@
+{
+  "name": "MCET Smart IoT Attendance Portal",
+  "description": "Smart IoT RFID Attendance Management System for Methodist College of Engineering and Technology (MCET) with automated timetable tracking, role-based dashboards, and ESP32 integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

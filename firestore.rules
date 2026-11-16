@@ -1,0 +1,680 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core validation & identity primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true && request.auth.token.email is string;
+    }
+
+    function authEmail() {
+      return request.auth.token.email.lower();
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerified() && authEmail() == '4623hadi@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (isVerified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    function hasUserDoc() {
+      return isVerified() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isFaculty() {
+      return hasUserDoc() && userDoc().role == 'faculty' && userDoc().status == 'active';
+    }
+
+    function isStudent() {
+      return hasUserDoc() && userDoc().role == 'student' && userDoc().status == 'active';
+    }
+
+    function isAuthorizedPortalUser() {
+      return isAdmin() || isFaculty() || isStudent();
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isOptionalString(data, key, maxLen) {
+      return !(key in data) || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    // Entity validation helpers
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['uid', 'email', 'name', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'name', 'createdAt', 'createdBy'])
+        && isValidId(data.uid)
+        && isValidString(data.email, 3, 200)
+        && isValidString(data.name, 1, 120)
+        && data.createdAt is timestamp
+        && isOptionalString(data, 'createdBy', 128);
+    }
+
+    function isValidUserAccount(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'photoUrl', 'role', 'linkedProfileId', 'assignedClassIds', 'assignedSubjectIds', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && isValidString(data.email, 3, 200)
+        && isValidString(data.displayName, 1, 120)
+        && isOptionalString(data, 'photoUrl', 500)
+        && data.role in ['admin', 'faculty', 'student']
+        && isOptionalString(data, 'linkedProfileId', 128)
+        && (!('assignedClassIds' in data) || (data.assignedClassIds is list && data.assignedClassIds.size() <= 50))
+        && (!('assignedSubjectIds' in data) || (data.assignedSubjectIds is list && data.assignedSubjectIds.size() <= 100))
+        && data.status in ['active', 'inactive']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPortalSettings(data) {
+      return data.keys().hasAll(['collegeName', 'shortName', 'academicYear', 'semester', 'timezone', 'lowAttendanceThreshold', 'updatedAt'])
+        && data.keys().hasOnly(['collegeName', 'shortName', 'logoUrl', 'academicYear', 'semester', 'effectiveFrom', 'defaultClassroom', 'timezone', 'lowAttendanceThreshold', 'updatedAt', 'updatedBy'])
+        && isValidString(data.collegeName, 2, 200)
+        && isValidString(data.shortName, 1, 40)
+        && isOptionalString(data, 'logoUrl', 500)
+        && isValidString(data.academicYear, 2, 32)
+        && isValidString(data.semester, 1, 32)
+        && isOptionalString(data, 'effectiveFrom', 32)
+        && isOptionalString(data, 'defaultClassroom', 64)
+        && isValidString(data.timezone, 2, 64)
+        && data.lowAttendanceThreshold is number
+        && data.lowAttendanceThreshold >= 0
+        && data.lowAttendanceThreshold <= 100
+        && data.updatedAt is timestamp
+        && isOptionalString(data, 'updatedBy', 128);
+    }
+
+    function isValidDepartment(data) {
+      return data.keys().hasAll(['code', 'name', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['code', 'name', 'status', 'createdAt', 'updatedAt'])
+        && isValidString(data.code, 1, 32)
+        && isValidString(data.name, 2, 160)
+        && data.status in ['active', 'inactive']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidClass(data) {
+      return data.keys().hasAll(['departmentId', 'departmentName', 'academicYear', 'semester', 'name', 'section', 'classroom', 'batches', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['departmentId', 'departmentName', 'academicYear', 'semester', 'name', 'section', 'classroom', 'batches', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.departmentId)
+        && isValidString(data.departmentName, 2, 160)
+        && isValidString(data.academicYear, 2, 32)
+        && isValidString(data.semester, 1, 32)
+        && isValidString(data.name, 2, 160)
+        && isValidString(data.section, 1, 32)
+        && isValidString(data.classroom, 1, 64)
+        && data.batches is list
+        && data.batches.size() >= 1
+        && data.batches.size() <= 10
+        && data.batches[0] is string
+        && data.status in ['active', 'inactive']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSubject(data) {
+      return data.keys().hasAll(['shortName', 'name', 'type', 'departmentId', 'classId', 'facultyIds', 'facultyNames', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['code', 'shortName', 'name', 'type', 'departmentId', 'classId', 'facultyIds', 'facultyNames', 'status', 'createdAt', 'updatedAt'])
+        && isOptionalString(data, 'code', 32)
+        && isValidString(data.shortName, 1, 40)
+        && isValidString(data.name, 2, 180)
+        && data.type in ['theory', 'lab', 'activity']
+        && isValidId(data.departmentId)
+        && isValidId(data.classId)
+        && data.facultyIds is list
+        && data.facultyIds.size() <= 10
+        && data.facultyNames is list
+        && data.facultyNames.size() <= 10
+        && data.status in ['active', 'inactive']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['studentId', 'rollNumber', 'name', 'email', 'departmentId', 'semester', 'classId', 'className', 'section', 'batch', 'academicYear', 'rfidUid', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'studentId', 'rollNumber', 'name', 'email', 'phone', 'departmentId', 'departmentName', 'semester', 'classId', 'className', 'section', 'batch', 'academicYear', 'rfidUid', 'photoUrl', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && isOptionalString(data, 'uid', 128)
+        && isValidString(data.studentId, 1, 64)
+        && isValidString(data.rollNumber, 1, 32)
+        && isValidString(data.name, 2, 120)
+        && isValidString(data.email, 3, 200)
+        && isOptionalString(data, 'phone', 32)
+        && isValidString(data.departmentId, 1, 128)
+        && isOptionalString(data, 'departmentName', 160)
+        && isValidString(data.semester, 1, 32)
+        && isValidId(data.classId)
+        && isValidString(data.className, 2, 160)
+        && isValidString(data.section, 1, 32)
+        && data.batch in ['B-I', 'B-II', 'ALL']
+        && isValidString(data.academicYear, 2, 32)
+        && isValidString(data.rfidUid, 0, 64)
+        && isOptionalString(data, 'photoUrl', 500)
+        && data.status in ['active', 'inactive']
+        && (!('isDemo' in data) || data.isDemo is bool)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidFaculty(data) {
+      return data.keys().hasAll(['facultyCode', 'name', 'email', 'departmentId', 'designation', 'assignedClassIds', 'assignedSubjectIds', 'canSubstitute', 'canCorrectAttendance', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'facultyCode', 'name', 'email', 'departmentId', 'departmentName', 'designation', 'assignedClassIds', 'assignedSubjectIds', 'canSubstitute', 'canCorrectAttendance', 'photoUrl', 'status', 'isDemo', 'createdAt', 'updatedAt'])
+        && isOptionalString(data, 'uid', 128)
+        && isValidString(data.facultyCode, 1, 64)
+        && isValidString(data.name, 2, 120)
+        && isValidString(data.email, 3, 200)
+        && isValidString(data.departmentId, 1, 128)
+        && isOptionalString(data, 'departmentName', 160)
+        && isValidString(data.designation, 2, 120)
+        && data.assignedClassIds is list
+        && data.assignedClassIds.size() <= 50
+        && data.assignedSubjectIds is list
+        && data.assignedSubjectIds.size() <= 100
+        && data.canSubstitute is bool
+        && data.canCorrectAttendance is bool
+        && isOptionalString(data, 'photoUrl', 500)
+        && data.status in ['active', 'inactive']
+        && (!('isDemo' in data) || data.isDemo is bool)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTimetableEntry(data) {
+      return data.keys().hasAll(['classId', 'dayOfWeek', 'periodNumber', 'endPeriodNumber', 'startTime', 'endTime', 'isMerged', 'isBatchSplit', 'slots', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['classId', 'dayOfWeek', 'periodNumber', 'endPeriodNumber', 'startTime', 'endTime', 'isMerged', 'isBatchSplit', 'slots', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.classId)
+        && data.dayOfWeek in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        && data.periodNumber is number && data.periodNumber >= 1 && data.periodNumber <= 6
+        && data.endPeriodNumber is number && data.endPeriodNumber >= data.periodNumber && data.endPeriodNumber <= 6
+        && isValidString(data.startTime, 3, 16)
+        && isValidString(data.endTime, 3, 16)
+        && data.isMerged is bool
+        && data.isBatchSplit is bool
+        && data.slots is list
+        && data.slots.size() >= 1
+        && data.slots.size() <= 4
+        && data.slots[0] is map
+        && data.status in ['active', 'inactive']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSubstitution(data) {
+      return data.keys().hasAll(['date', 'classId', 'periodNumber', 'endPeriodNumber', 'batch', 'originalSubjectId', 'originalSubjectName', 'actualSubjectId', 'actualSubjectName', 'actualFacultyId', 'actualFacultyName', 'classroom', 'changedByUid', 'changedByName', 'changedByRole', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['date', 'classId', 'periodNumber', 'endPeriodNumber', 'batch', 'originalSubjectId', 'originalSubjectName', 'originalFacultyId', 'originalFacultyName', 'actualSubjectId', 'actualSubjectName', 'actualFacultyId', 'actualFacultyName', 'classroom', 'reason', 'changedByUid', 'changedByName', 'changedByRole', 'status', 'createdAt', 'updatedAt'])
+        && isValidString(data.date, 10, 16)
+        && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && isValidId(data.classId)
+        && data.periodNumber is number && data.periodNumber >= 1 && data.periodNumber <= 6
+        && data.endPeriodNumber is number && data.endPeriodNumber >= data.periodNumber && data.endPeriodNumber <= 6
+        && data.batch in ['ALL', 'B-I', 'B-II']
+        && isValidString(data.originalSubjectId, 1, 128)
+        && isValidString(data.originalSubjectName, 1, 180)
+        && isOptionalString(data, 'originalFacultyId', 128)
+        && isOptionalString(data, 'originalFacultyName', 120)
+        && isValidString(data.actualSubjectId, 1, 128)
+        && isValidString(data.actualSubjectName, 1, 180)
+        && isValidString(data.actualFacultyId, 1, 128)
+        && isValidString(data.actualFacultyName, 1, 120)
+        && isValidString(data.classroom, 1, 64)
+        && isOptionalString(data, 'reason', 300)
+        && isValidString(data.changedByUid, 1, 128)
+        && isValidString(data.changedByName, 1, 120)
+        && data.changedByRole in ['admin', 'faculty']
+        && data.status in ['active', 'cancelled']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAttendanceRecord(data) {
+      return data.keys().hasAll(['studentDocId', 'studentId', 'studentName', 'studentEmail', 'rollNumber', 'classId', 'className', 'section', 'batch', 'subjectId', 'subjectShortName', 'subjectName', 'date', 'period', 'classroom', 'status', 'source', 'scanTimestamp', 'recordedAt', 'updatedAt'])
+        && data.keys().hasOnly(['studentUid', 'studentDocId', 'studentId', 'studentName', 'studentEmail', 'rollNumber', 'classId', 'className', 'section', 'batch', 'subjectId', 'subjectShortName', 'subjectName', 'date', 'period', 'classroom', 'status', 'source', 'deviceId', 'eventId', 'facultyId', 'facultyUid', 'facultyEmail', 'facultyName', 'isSubstituted', 'substitutionId', 'scanTimestamp', 'recordedAt', 'updatedAt', 'correctedBy', 'correctionReason', 'isDemo'])
+        && isOptionalString(data, 'studentUid', 128)
+        && isValidId(data.studentDocId)
+        && isValidString(data.studentId, 1, 64)
+        && isValidString(data.studentName, 1, 120)
+        && isValidString(data.studentEmail, 3, 200)
+        && isValidString(data.rollNumber, 1, 32)
+        && isValidId(data.classId)
+        && isValidString(data.className, 1, 160)
+        && isValidString(data.section, 1, 32)
+        && data.batch in ['B-I', 'B-II', 'ALL']
+        && isValidId(data.subjectId)
+        && isValidString(data.subjectShortName, 1, 40)
+        && isValidString(data.subjectName, 1, 180)
+        && isValidString(data.date, 10, 16)
+        && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.period is number && data.period >= 1 && data.period <= 6
+        && isValidString(data.classroom, 1, 64)
+        && data.status in ['present', 'absent', 'late']
+        && data.source in ['rfid', 'manual']
+        && isOptionalString(data, 'deviceId', 128)
+        && isOptionalString(data, 'eventId', 128)
+        && isOptionalString(data, 'facultyId', 128)
+        && isOptionalString(data, 'facultyUid', 128)
+        && isOptionalString(data, 'facultyEmail', 200)
+        && isOptionalString(data, 'facultyName', 120)
+        && (!('isSubstituted' in data) || data.isSubstituted is bool)
+        && isOptionalString(data, 'substitutionId', 128)
+        && data.scanTimestamp is timestamp
+        && data.recordedAt is timestamp
+        && data.updatedAt is timestamp
+        && isOptionalString(data, 'correctedBy', 120)
+        && isOptionalString(data, 'correctionReason', 300)
+        && (!('isDemo' in data) || data.isDemo is bool);
+    }
+
+    function isValidDevice(data) {
+      return data.keys().hasAll(['deviceId', 'name', 'classroom', 'assignedClassId', 'assignedClassName', 'status', 'connectionStatus', 'pendingUploads', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['deviceId', 'name', 'classroom', 'assignedClassId', 'assignedClassName', 'status', 'connectionStatus', 'lastSyncAt', 'pendingUploads', 'firmwareVersion', 'createdAt', 'updatedAt'])
+        && isValidId(data.deviceId)
+        && isValidString(data.name, 2, 120)
+        && isValidString(data.classroom, 1, 64)
+        && isValidString(data.assignedClassId, 1, 128)
+        && isValidString(data.assignedClassName, 1, 160)
+        && data.status in ['active', 'inactive']
+        && data.connectionStatus in ['online', 'offline', 'unconfigured']
+        && (!('lastSyncAt' in data) || data.lastSyncAt is timestamp)
+        && data.pendingUploads is number && data.pendingUploads >= 0
+        && isOptionalString(data, 'firmwareVersion', 32)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidDeviceScan(data) {
+      return data.keys().hasAll(['eventId', 'deviceId', 'rfidUid', 'classroom', 'scanTimestamp', 'date', 'status', 'message', 'createdAt'])
+        && data.keys().hasOnly(['eventId', 'deviceId', 'rfidUid', 'classroom', 'classId', 'scanTimestamp', 'date', 'period', 'status', 'studentDocId', 'studentName', 'rollNumber', 'subjectName', 'message', 'createdAt'])
+        && isValidId(data.eventId)
+        && isValidId(data.deviceId)
+        && isValidString(data.rfidUid, 2, 64)
+        && isValidString(data.classroom, 1, 64)
+        && isOptionalString(data, 'classId', 128)
+        && data.scanTimestamp is timestamp
+        && isValidString(data.date, 10, 16)
+        && (!('period' in data) || (data.period is number && data.period >= 0 && data.period <= 6))
+        && data.status in ['processed', 'flagged_no_timetable', 'invalid_card', 'duplicate', 'offline_synced']
+        && isOptionalString(data, 'studentDocId', 128)
+        && isOptionalString(data, 'studentName', 120)
+        && isOptionalString(data, 'rollNumber', 32)
+        && isOptionalString(data, 'subjectName', 180)
+        && isValidString(data.message, 1, 300)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidActivityLog(data) {
+      return data.keys().hasAll(['action', 'category', 'performedByUid', 'performedByName', 'performedByEmail', 'performedByRole', 'targetType', 'targetId', 'targetLabel', 'createdAt'])
+        && data.keys().hasOnly(['action', 'category', 'performedByUid', 'performedByName', 'performedByEmail', 'performedByRole', 'targetType', 'targetId', 'targetLabel', 'previousValue', 'updatedValue', 'details', 'createdAt'])
+        && isValidString(data.action, 2, 160)
+        && data.category in ['student', 'faculty', 'attendance', 'timetable', 'substitution', 'device', 'settings', 'auth']
+        && isValidString(data.performedByUid, 1, 128)
+        && isValidString(data.performedByName, 1, 120)
+        && isValidString(data.performedByEmail, 1, 200)
+        && data.performedByRole in ['admin', 'faculty', 'student', 'system']
+        && isValidString(data.targetType, 1, 64)
+        && isValidString(data.targetId, 1, 128)
+        && isValidString(data.targetLabel, 1, 200)
+        && isOptionalString(data, 'previousValue', 500)
+        && isOptionalString(data, 'updatedValue', 500)
+        && isOptionalString(data, 'details', 500)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidNotice(data) {
+      return data.keys().hasAll(['title', 'body', 'category', 'targetRole', 'authorName', 'authorUid', 'isPinned', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['title', 'body', 'category', 'targetRole', 'classId', 'authorName', 'authorUid', 'isPinned', 'createdAt', 'updatedAt'])
+        && isValidString(data.title, 2, 200)
+        && isValidString(data.body, 2, 2000)
+        && data.category in ['announcement', 'academic', 'timetable', 'college']
+        && data.targetRole in ['all', 'student', 'faculty']
+        && isOptionalString(data, 'classId', 128)
+        && isValidString(data.authorName, 1, 120)
+        && isValidString(data.authorUid, 1, 128)
+        && data.isPinned is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAccessRequest(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'requestedRole', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'displayName', 'requestedRole', 'rollNumber', 'department', 'notes', 'status', 'reviewedBy', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && isValidString(data.email, 3, 200)
+        && isValidString(data.displayName, 1, 120)
+        && data.requestedRole in ['student', 'faculty']
+        && isOptionalString(data, 'rollNumber', 32)
+        && isOptionalString(data, 'department', 120)
+        && isOptionalString(data, 'notes', 400)
+        && data.status in ['pending', 'approved', 'rejected']
+        && isOptionalString(data, 'reviewedBy', 120)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 1. Admins
+    match /admins/{uid} {
+      allow get: if isValidId(uid) && (isAdmin() || (isVerified() && uid == request.auth.uid));
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(uid) && isValidAdmin(incoming()) && incoming().createdAt == request.time;
+      allow update: if isAdmin() && isValidId(uid) && isValidAdmin(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin() && isValidId(uid);
+    }
+
+    // 2. Users (Role & Profile Link)
+    match /users/{uid} {
+      allow get: if isValidId(uid) && isVerified() && (uid == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isVerified() && isValidId(uid) && isValidUserAccount(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            uid == request.auth.uid
+            && incoming().uid == request.auth.uid
+            && incoming().email == authEmail()
+            && incoming().status == 'active'
+            && (
+              (incoming().role == 'student'
+                && isValidId(incoming().linkedProfileId)
+                && get(/databases/$(database)/documents/students/$(incoming().linkedProfileId)).data.email == authEmail()
+                && get(/databases/$(database)/documents/students/$(incoming().linkedProfileId)).data.status == 'active')
+              ||
+              (incoming().role == 'faculty'
+                && isValidId(incoming().linkedProfileId)
+                && get(/databases/$(database)/documents/faculty/$(incoming().linkedProfileId)).data.email == authEmail()
+                && get(/databases/$(database)/documents/faculty/$(incoming().linkedProfileId)).data.status == 'active')
+            )
+          )
+        );
+      allow update: if isVerified() && isValidId(uid) && isValidUserAccount(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            uid == request.auth.uid
+            && incoming().uid == existing().uid
+            && incoming().email == existing().email
+            && incoming().role == existing().role
+            && incoming().linkedProfileId == existing().linkedProfileId
+            && incoming().assignedClassIds == existing().assignedClassIds
+            && incoming().assignedSubjectIds == existing().assignedSubjectIds
+            && incoming().status == existing().status
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoUrl', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(uid);
+    }
+
+    // 3. Portal Settings (non-PII branding config)
+    match /settings/{settingId} {
+      allow get: if isValidId(settingId) && (settingId == 'portal_config' || isAuthorizedPortalUser());
+      allow list: if isAuthorizedPortalUser();
+      allow create: if isAdmin() && isValidId(settingId) && isValidPortalSettings(incoming()) && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(settingId) && isValidPortalSettings(incoming()) && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // 4. Departments
+    match /departments/{deptId} {
+      allow get: if isValidId(deptId) && isAuthorizedPortalUser();
+      allow list: if isAuthorizedPortalUser();
+      allow create: if isAdmin() && isValidId(deptId) && isValidDepartment(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(deptId) && isValidDepartment(incoming()) && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(deptId);
+    }
+
+    // 5. Classes
+    match /classes/{classId} {
+      allow get: if isValidId(classId) && isAuthorizedPortalUser();
+      allow list: if isAuthorizedPortalUser();
+      allow create: if isAdmin() && isValidId(classId) && isValidClass(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(classId) && isValidClass(incoming()) && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(classId);
+    }
+
+    // 6. Subjects
+    match /subjects/{subjectId} {
+      allow get: if isValidId(subjectId) && isAuthorizedPortalUser();
+      allow list: if isAuthorizedPortalUser();
+      allow create: if isAdmin() && isValidId(subjectId) && isValidSubject(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(subjectId) && isValidSubject(incoming()) && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(subjectId);
+    }
+
+    // 7. Students (Strict Student Privacy + Faculty Class Isolation)
+    match /students/{studentId} {
+      allow get: if isValidId(studentId) && (
+        isAdmin()
+        || (isVerified() && (existing().uid == request.auth.uid || existing().email == authEmail()))
+        || (isFaculty() && existing().classId in userDoc().assignedClassIds)
+      );
+      allow list: if isAdmin()
+        || (isVerified() && (existing().uid == request.auth.uid || existing().email == authEmail()))
+        || (isFaculty() && existing().classId in userDoc().assignedClassIds);
+      allow create: if isAdmin() && isValidId(studentId) && isValidStudent(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(studentId) && isValidStudent(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            existing().email == authEmail()
+            && (existing().uid == '' || existing().uid == request.auth.uid)
+            && incoming().uid == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['uid', 'photoUrl', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(studentId);
+    }
+
+    // 8. Faculty (PII Protected)
+    match /faculty/{facultyId} {
+      allow get: if isValidId(facultyId) && (
+        isAdmin()
+        || (isVerified() && (existing().uid == request.auth.uid || existing().email == authEmail()))
+        || isFaculty()
+      );
+      allow list: if isAdmin()
+        || (isVerified() && (existing().uid == request.auth.uid || existing().email == authEmail()))
+        || isFaculty();
+      allow create: if isAdmin() && isValidId(facultyId) && isValidFaculty(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(facultyId) && isValidFaculty(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            existing().email == authEmail()
+            && (existing().uid == '' || existing().uid == request.auth.uid)
+            && incoming().uid == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['uid', 'photoUrl', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(facultyId);
+    }
+
+    // 9. Timetable
+    match /timetable/{entryId} {
+      allow get: if isValidId(entryId) && isAuthorizedPortalUser();
+      allow list: if isAuthorizedPortalUser();
+      allow create: if isAdmin() && isValidId(entryId) && isValidTimetableEntry(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(entryId) && isValidTimetableEntry(incoming()) && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(entryId);
+    }
+
+    // 10. Substitutions
+    match /substitutions/{subId} {
+      allow get: if isValidId(subId) && (
+        isAdmin()
+        || (isFaculty() && existing().classId in userDoc().assignedClassIds)
+        || (isStudent() && existing().classId in userDoc().assignedClassIds)
+      );
+      allow list: if isAdmin()
+        || (isFaculty() && existing().classId in userDoc().assignedClassIds)
+        || (isStudent() && existing().classId in userDoc().assignedClassIds);
+      allow create: if isVerified() && isValidId(subId) && isValidSubstitution(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            isFaculty()
+            && incoming().classId in userDoc().assignedClassIds
+            && incoming().changedByUid == request.auth.uid
+            && incoming().changedByRole == 'faculty'
+            && get(/databases/$(database)/documents/faculty/$(userDoc().linkedProfileId)).data.canSubstitute == true
+          )
+        );
+      allow update: if isVerified() && isValidId(subId) && isValidSubstitution(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            isFaculty()
+            && existing().classId in userDoc().assignedClassIds
+            && incoming().classId == existing().classId
+            && get(/databases/$(database)/documents/faculty/$(userDoc().linkedProfileId)).data.canSubstitute == true
+            && incoming().diff(existing()).affectedKeys().hasOnly(['actualSubjectId', 'actualSubjectName', 'actualFacultyId', 'actualFacultyName', 'classroom', 'reason', 'status', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(subId);
+    }
+
+    // 11. Attendance (Strict Student Privacy + Faculty Class Isolation)
+    match /attendance/{attendanceId} {
+      allow get: if isValidId(attendanceId) && (
+        isAdmin()
+        || (isVerified() && (existing().studentUid == request.auth.uid || existing().studentEmail == authEmail()))
+        || (isFaculty() && existing().classId in userDoc().assignedClassIds)
+      );
+      allow list: if isAdmin()
+        || (isVerified() && (existing().studentUid == request.auth.uid || existing().studentEmail == authEmail()))
+        || (isFaculty() && existing().classId in userDoc().assignedClassIds);
+      allow create: if isVerified() && isValidId(attendanceId) && isValidAttendanceRecord(incoming())
+        && incoming().recordedAt == request.time && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            isFaculty()
+            && incoming().classId in userDoc().assignedClassIds
+            && incoming().source == 'manual'
+          )
+        );
+      allow update: if isVerified() && isValidId(attendanceId) && isValidAttendanceRecord(incoming())
+        && incoming().recordedAt == existing().recordedAt
+        && incoming().updatedAt == request.time
+        && incoming().studentDocId == existing().studentDocId
+        && incoming().classId == existing().classId
+        && incoming().date == existing().date
+        && (
+          isAdmin()
+          || (
+            isFaculty()
+            && existing().classId in userDoc().assignedClassIds
+            && get(/databases/$(database)/documents/faculty/$(userDoc().linkedProfileId)).data.canCorrectAttendance == true
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'correctedBy', 'correctionReason', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(attendanceId);
+    }
+
+    // 12. Devices (Admin Managed)
+    match /devices/{deviceId} {
+      allow get: if isValidId(deviceId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(deviceId) && isValidDevice(incoming()) && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(deviceId) && isValidDevice(incoming()) && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(deviceId);
+    }
+
+    // 13. Device Scans
+    match /deviceScans/{eventId} {
+      allow get: if isValidId(eventId) && (isAdmin() || (isFaculty() && existing().classId in userDoc().assignedClassIds));
+      allow list: if isAdmin() || (isFaculty() && existing().classId in userDoc().assignedClassIds);
+      allow create: if isAdmin() && isValidId(eventId) && isValidDeviceScan(incoming()) && incoming().createdAt == request.time;
+      allow update: if isAdmin() && isValidId(eventId) && isValidDeviceScan(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin() && isValidId(eventId);
+    }
+
+    // 14. Activity Logs (Immutable)
+    match /activityLogs/{logId} {
+      allow get: if isValidId(logId) && (isAdmin() || (isFaculty() && existing().performedByUid == request.auth.uid));
+      allow list: if isAdmin() || (isFaculty() && existing().performedByUid == request.auth.uid);
+      allow create: if isVerified() && isValidId(logId) && isValidActivityLog(incoming())
+        && incoming().createdAt == request.time
+        && (
+          isAdmin()
+          || (isFaculty() && incoming().performedByUid == request.auth.uid && incoming().performedByRole == 'faculty')
+        );
+      allow update, delete: if false;
+    }
+
+    // 15. Notices
+    match /notices/{noticeId} {
+      allow get: if isValidId(noticeId) && (
+        isAdmin()
+        || isFaculty()
+        || (isStudent() && (existing().targetRole == 'all' || existing().targetRole == 'student'))
+      );
+      allow list: if isAdmin()
+        || isFaculty()
+        || (isStudent() && (existing().targetRole == 'all' || existing().targetRole == 'student'));
+      allow create: if isVerified() && isValidId(noticeId) && isValidNotice(incoming())
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time
+        && (isAdmin() || (isFaculty() && incoming().authorUid == request.auth.uid));
+      allow update: if isVerified() && isValidId(noticeId) && isValidNotice(incoming())
+        && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time
+        && (isAdmin() || (isFaculty() && existing().authorUid == request.auth.uid));
+      allow delete: if isAdmin() && isValidId(noticeId);
+    }
+
+    // 16. Access Requests
+    match /accessRequests/{requestId} {
+      allow get: if isValidId(requestId) && (isAdmin() || (isVerified() && existing().uid == request.auth.uid));
+      allow list: if isAdmin() || (isVerified() && existing().uid == request.auth.uid);
+      allow create: if isVerified() && isValidId(requestId) && isValidAccessRequest(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().email == authEmail()
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(requestId) && isValidAccessRequest(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(requestId);
+    }
+
+    // 17. Startup Connectivity Check
+    match /test/{docId} {
+      allow get: if docId == 'connection';
+    }
+  }
+}
